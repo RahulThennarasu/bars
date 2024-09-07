@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Chat</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h3>New Chat</h3>
+        </div>
+        <div class="chat-content" id="chat-content">
+            <!-- Chat messages will appear here -->
+        </div>
+        <div class="chat-footer">
+            <div class="input-container">
+                <input type="text" id="message" class="chat-input" placeholder="Ask anything...">
+                <button class="send-button" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function sendMessage() {
+            const message = document.getElementById('message').value;
+            if (message.trim() !== "") {
+                fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ 'message': message })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        const chatContent = document.getElementById('chat-content');
+                        const userMessage = `<div><strong>You:</strong> ${message}</div>`;
+                        const botResponse = `<div><strong>Bot:</strong> ${data.response}</div>`;
+                        chatContent.innerHTML += userMessage + botResponse;
+                        document.getElementById('message').value = '';
+                    });
+            }
+        }
+    </script>
+</body>
+
+</html>
