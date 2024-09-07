@@ -1,0 +1,144 @@
+/* General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Arial', sans-serif;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    background-color: #121212;
+    color: #ffffff;
+    font-size: 16px;
+}
+
+header {
+    background-color: #282a36;
+    padding: 20px;
+    font-size: 1.2rem;
+}
+
+nav ul {
+    list-style-type: none;
+    display: flex;
+    justify-content: center;
+}
+
+nav li {
+    margin: 0 20px;
+}
+
+nav a {
+    color: #ffffff;
+    text-decoration: none;
+    font-family: 'Comfortaa'; 
+    font-size: 22px;
+}
+
+.container {
+    display: flex;
+    height: 90vh;
+}
+
+aside {
+    background-color: #333;
+    width: 40%;
+    padding: 20px;
+    overflow-y: auto; /* Enable scrolling */
+    max-height: 90vh; /* Maximum height to match the container height */
+}
+
+aside h2 {
+    color: #cccccc;
+    margin-bottom: 10px;
+    font-size: 1.4rem;
+}
+
+aside ul {
+    list-style: none;
+    padding: 0;
+    font-size: 1.2rem;
+    line-height: 1.6;
+}
+
+aside li {
+    background: #424242;
+    padding: 8px 10px;
+    border-radius: 4px;
+    word-wrap: break-word;
+    margin-bottom: 15px;
+    color: white; // Default text color
+}
+
+.user-message {
+    color: #2ebdf5; // Dark text color for better readability on light background
+}
+
+.ai-message {
+    color: #f1a3e4; // Dark text color for better readability on light background
+}
+
+main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    
+}
+
+h1 {
+    font-size: 3rem;
+    margin-bottom: 10px;
+    font-family: 'Comfortaa'; 
+    font-size: 50px;
+    color: rgb(116, 199, 152)
+}
+
+p {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    max-width: 800px;
+    font-family: 'Comfortaa'; 
+}
+
+.chat-interface {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+input[type="text"] {
+    width: 300px;
+    padding: 15px;
+    font-size: 1.2rem;
+    border: none;
+    border-radius: 5px;
+    background-color: #333;
+    color: white;
+}
+
+button {
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    background-color: rgb(35, 184, 221);
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #38f888;
+}
+
+footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #282a36;
+    color: #ffffff;
+}
