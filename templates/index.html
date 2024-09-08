@@ -4,25 +4,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini Chat</title>
+    <title>bars.ai</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 
 <body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <h3>New Chat</h3>
-        </div>
-        <div class="chat-content" id="chat-content">
-            <!-- Chat messages will appear here -->
-        </div>
-        <div class="chat-footer">
-            <div class="input-container">
-                <input type="text" id="message" class="chat-input" placeholder="Ask anything...">
-                <button class="send-button" onclick="sendMessage()">Send</button>
-            </div>
-        </div>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="#chat">BARS.AI</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <aside id="chat-history">
+            <h2>Diagnosis Responses</h2>
+            <ul id="history">
+                <!-- Chat history (questions and responses) will appear here -->
+            </ul>
+        </aside>
+
+        <main>
+            <section id="chat">
+                <h1>Colon Cancer Diagnosis Chat Bot</h1>
+                <p>Our BARS.AI Colon Cancer Diagnosis Chat Bot distinguishes specific causes possibly related to
+                    colon/colorectal cancer. The role of our chat bot is to provide reliable advice for people unable to
+                    access a doctor.</p>
+                <div class="chat-interface">
+                    <!-- Changed from input to textarea -->
+                    <textarea id="message" class="chat-input" rows="3" placeholder="Ask anything..."></textarea>
+                    <button id="chat-button" onclick="sendMessage()">Send</button>
+                </div>
+            </section>
+        </main>
     </div>
+
+    <footer>
+        <p>© 2024 BARS.AI All rights reserved</p>
+    </footer>
 
     <script>
         function sendMessage() {
@@ -35,11 +55,22 @@
                 })
                     .then(response => response.json())
                     .then(data => {
-                        const chatContent = document.getElementById('chat-content');
-                        const userMessage = `<div><strong>You:</strong> ${message}</div>`;
-                        const botResponse = `<div><strong>Bot:</strong> ${data.response}</div>`;
-                        chatContent.innerHTML += userMessage + botResponse;
+                        const history = document.getElementById('history');
+                        const userMessage = `<li class="user-message"><strong>You:</strong> ${message}</li>`;
+                        const botResponse = `<li class="ai-message"><strong>BARS:</strong> ${data.response}</li>`;
+
+                        // Append user and bot response to chat history
+                        history.innerHTML += userMessage + botResponse;
+
+                        // If there's an image URL in the response, display the image
+                        if (data.image_url) {
+                            const imageElement = `<li class="ai-image"><img src="${data.image_url}" alt="Generated Image" class="generated-image"></li>`;
+                            history.innerHTML += imageElement;
+                        }
+
+                        // Clear the textarea after sending
                         document.getElementById('message').value = '';
+                        history.scrollTop = history.scrollHeight; // Scroll to the bottom of chat history
                     });
             }
         }

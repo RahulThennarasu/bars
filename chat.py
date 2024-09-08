@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import google.generativeai as genai
-from pymongo import MongoClient
+import google.generativeai as dalle  # Import for DALL-E-like image generation (adjust as needed)
 import pymupdf  # PyMuPDF
 import textwrap
 import numpy as np
@@ -15,20 +15,15 @@ np.random.seed(42)
 app = Flask(__name__)
 
 class Gemini:
-    # All of this should come from config.py
+    # Configuration
     pdf_path = "article"
     EMBEDDING_MODEL = 'models/text-embedding-004'
     TEXT_MODEL = genai.GenerativeModel('gemini-1.5-flash')
-    API_KEY = 'AIzaSyB7_quPu4GIRIsaNTG5D9XMMgjXzB4m7a8'
+    API_KEY = 'AIzaSyB46Vu591CrCnF45sESz0wWJaAvNR1B0Dg'
 
-    # MongoDB connection details
-    MONGO_URI = 'mongodb+srv://rahulthennarasu07:lego3011@cluster.igpxjoe.mongodb.net/?retryWrites=true&w=majority&appName=cluster'
-    client = MongoClient(MONGO_URI)
-    db = client['chat_data']
-    collection = db['conversations']
-    embedding_collection = db['embeddings']
-
-    # Some dataframes/lists to store passages
+    # Local storage for conversation history and embeddings (instead of MongoDB)
+    conversation_history = []
+    embeddings = {}  # Dictionary to store embeddings
     all_texts = {}
     df = pd.DataFrame()
 
@@ -37,7 +32,7 @@ class Gemini:
         self.df = self.createEmbedDataFrame(self.pdf_path)
         print("Gemini Initialized")
 
-    # Extract files from PDFs
+    # Extract text from PDFs
     def extract_text_from_pdf(self, pdf_path):
         text = ""
         with pymupdf.open(pdf_path) as pdf:
@@ -46,7 +41,7 @@ class Gemini:
         print("PDFs OCR'd")
         return text
 
-    # Split text into chunks so that it is embeddable (more than 10000 bytes doesn't get embedded)
+    # Split text into chunks for embedding
     def split_text_into_chunks(self, catalog, max_chunk_size=9000):
         chunks = []
         for entry in catalog:
@@ -71,9 +66,7 @@ class Gemini:
         return chunks
 
     def createEmbedDataFrame(self, pdf_directory):
-        print(Path.cwd())
         directory = Path.cwd() / pdf_directory
-        print(directory)
         for pdf_file in directory.glob('*.pdf'):
             self.all_texts[pdf_file.name] = self.extract_text_from_pdf(pdf_file)
         documents = self.split_text_into_chunks(self.all_texts)
@@ -85,10 +78,10 @@ class Gemini:
         return dataf
 
     def get_or_generate_embedding(self, title, text):
-        embedding = self.retrieve_embedding_from_db(title, text)
+        embedding = self.embeddings.get((title, text))
         if embedding is None:
             embedding = self.embed_fn(title, text)
-            self.save_embedding_to_db(title, text, embedding)
+            self.embeddings[(title, text)] = embedding
         return embedding
 
     def embed_fn(self, title, text):
@@ -98,17 +91,6 @@ class Gemini:
             task_type="retrieval_document",
             title=title
         )["embedding"]
-
-    def save_embedding_to_db(self, title, text, embedding):
-        self.embedding_collection.insert_one({
-            'title': title,
-            'text': text,
-            'embedding': embedding
-        })
-
-    def retrieve_embedding_from_db(self, title, text):
-        result = self.embedding_collection.find_one({'title': title, 'text': text})
-        return result['embedding'] if result else None
 
     def find_best_passage(self, query):
         query_embedding = genai.embed_content(
@@ -120,7 +102,7 @@ class Gemini:
         idx = np.argmax(dot_products)
         return self.df.iloc[idx]['Text']
 
-    # Format query with a prompt, so that it answers the way we intend using the embeddings
+    # Format query with a prompt
     def makeQuery(self, quest):
         query = quest
         passage = self.find_best_passage(query)
@@ -129,10 +111,9 @@ class Gemini:
         try:
             escaped = passage.replace("'", "").replace('"', "").replace("\n", " ")
             full_message = textwrap.dedent(f"""
-                You are role playing as a oncology advise nurse talking to the patient or a caregiver, both answering their questions, but also asking \
-    relevant questions to get more information. Once they tell you about the diagnosis and treatment focus only on answering the questions and \
-    giving useful information. Currently your knowledge is limited to colon cancer and colorectal cancer. Patient has never seen you before. You can suggest questions to the patient and answer to your ability based on the the knowledge base.\
-    the tests. Also do not repeat questions multiple times. Please be sure to respond to the user's questions using the text from the reference passage included below. \
+                You are role-playing as an oncology advice nurse talking to the patient or caregiver, both answering their questions and asking relevant questions to get more information. 
+                Focus only on answering based on the knowledge base regarding colon cancer and colorectal cancer.
+                The patient has never seen you before. You can suggest questions and respond based on the reference passage.
                 MESSAGE: '{query}'
                 PASSAGE: '{passage}'
                 ANSWER:
@@ -160,20 +141,29 @@ def chat():
             response = chat.send_message(full_message)
             answer = response.text
 
-            # Save the conversation to MongoDB
+            # Image generation based on the response text
+            image_prompt = f"Generate an image related to this response: {answer}"  # Adjust prompt as needed
             try:
-                akinator.collection.insert_one({
-                    'user_message': user_message,
-                    'bot_response': answer
-                })
-                print("Data saved to MongoDB.")
-            except Exception as db_e:
-                print(f"Failed to save to MongoDB: {db_e}")
+                image_data = dalle.text2im(
+                    prompt=image_prompt,
+                    size="1024x1024"  # Image size
+                )
+                image_url = image_data['image_url']  # Adjust depending on API response
+            except Exception as e:
+                print(f"Error generating image: {e}")
+                image_url = None
 
-            return jsonify({'response': answer})
+            # Store the conversation and image locally in conversation_history list
+            akinator.conversation_history.append({
+                'user_message': user_message,
+                'bot_response': answer,
+                'image_url': image_url  # Save image URL
+            })
+            print("Data saved locally with image.")
+
+            return jsonify({'response': answer, 'image_url': image_url})
 
     return jsonify({'response': "Invalid input"})
-
 
 if __name__ == '__main__':
     app.run(debug=True)
